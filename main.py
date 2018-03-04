@@ -3,12 +3,23 @@ import string
 from pprint import pprint
 from bs4 import BeautifulSoup
 
-def extract_tag(athing, html_tag, html_class):
-	# возвращаем содержимое html-тега в виде строки
-	return athing.find(html_tag, {"class": html_class}).contents[0]
+
+def extract_author(athing):
+	# возвращаем автора из новости
+	return athing.find("a", {"class": "hnuser"}).contents[0]
 
 
-def count_comments(athing):
+def extract_title(athing):
+	# возвращаем заголовок из новости
+	return athing.find("a", {"class": "storylink"}).contents[0]
+
+
+def extract_points(athing):
+	# возвращаем количество голосов из новости
+	return int(athing.find("span", {"class": "score"}).contents[0].strip(string.ascii_letters))
+
+
+def extract_comments(athing):
 	# возвращаем количество комментариев из новости
 	contents = athing.find("td", {"class": "subtext"}).contents[-2].contents[0]
 	return 0 if contents == "discuss" else int(contents.strip(string.ascii_letters))
@@ -25,11 +36,11 @@ def extract_data(athing):
 	parsable_athing = BeautifulSoup(athing, 'html.parser')
 
 	return {
-		"author": extract_tag(parsable_athing, "a", "hnuser"),
-		"title": extract_tag(parsable_athing, "a", "storylink"),
+		"author": extract_author(parsable_athing),
+		"title": extract_title(parsable_athing),
 		"url": extract_url(parsable_athing),
-		"comments": count_comments(parsable_athing),
-		"points": int(extract_tag(parsable_athing, "span", "score").strip(string.ascii_letters))
+		"comments": extract_comments(parsable_athing),
+		"points": extract_points(parsable_athing) 
 	}
 
 
