@@ -31,11 +31,16 @@ def extract_url(athing):
 	return url if url.find("http") == 0 else None
 
 
+def extract_id(athing):
+	return int(athing.find("tr", {"class": "athing"})["id"])
+
+
 def extract_data(athing):
 	# принимаем новость в формате html и возвращаем ее же, но в виде словаря с полями author, text и т.д.
 	parsable_athing = BeautifulSoup(athing, 'html.parser')
 
 	return {
+		"id": extract_id(parsable_athing),
 		"author": extract_author(parsable_athing),
 		"title": extract_title(parsable_athing),
 		"url": extract_url(parsable_athing),
@@ -44,8 +49,11 @@ def extract_data(athing):
 	}
 
 
-def extract_news(n_pages):
-	host = "https://news.ycombinator.com/newest"	# откуда берем новости
+def extract_news_by_start_item(start = 0):
+
+	# Получить 30 новостей, начиная с определенной новости
+
+	host = "https://news.ycombinator.com/newest?next=" + str(start)	# откуда берем новости
 	request_text = requests.get(host).text
 	request_html = BeautifulSoup(request_text, 'html.parser')
 
@@ -53,7 +61,24 @@ def extract_news(n_pages):
 	news_table_contents = ''.join(map(str, news_table.contents))	# удаляем <table> и </table>
 	news_list = news_table_contents.split('<tr class="spacer" style="height:5px"></tr>')[:-1]	# избавились от <tr> More...
 
-	return list(map(extract_data, news_list))
+	news = list(map(extract_data, news_list))
+
+	return news
+
+
+def extract_news(n_pages):
+	news = []
+
+	for i in range(n_pages):
+		
+		last_item_id = 0
+		
+		if len(news) != 0:
+			last_item_id = news[-1]["id"]
+
+		news = news + extract_news_by_start_item(last_item_id)
+
+	return news
 
 
 pprint(extract_news(2))
